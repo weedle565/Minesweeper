@@ -56,7 +56,7 @@ public class Main {
         }
     }
 
-    public void placeMines(int mines){
+    private void placeMines(int mines){
 
         for (int i = 0; i < mines; i++) {
             Random r = new Random();
@@ -164,7 +164,7 @@ public class Main {
 
     }
 
-    public void UI(){
+    private void UI(){
 
         Scanner s = new Scanner(System.in);
 
