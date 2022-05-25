@@ -2,12 +2,12 @@ import java.util.Random;
 
 public class Mine {
 
-    private int mineX;
-    private int mineY;
+    private final int mineX;
+    private final int mineY;
 
     public Mine(Board b){
 
-
+        //Randomly select mine location
         Random r = new Random();
         this.mineX = r.nextInt(1, b.getSize());
         this.mineY = r.nextInt(1, b.getSize());
