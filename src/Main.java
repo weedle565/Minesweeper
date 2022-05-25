@@ -1,39 +1,54 @@
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class Main {
 
-    private final String[][] board;
-    private final int[] mineX;
-    private final int[] mineY;
-    private boolean playing;
-    private int flagsLeft;
-    private int mines;
+    private static boolean playing;
 
-    public Main(int size) {
+    private static ArrayList<Flag> flags;
+    private static ArrayList<Mine> mines;
 
-        board = new String[size*2+1][size*2+1];
-        mineX = new int[size];
-        mineY = new int[size];
+
+    public Main() {
 
         playing = true;
 
+        mines = new ArrayList<>();
+        flags = new ArrayList<>();
+
     }
 
-    private void createBoard(int mines){
+    private void gameInit(int size){
 
-        for(int i = 0; i < mines*2+1; i++){
+        Board b = new Board(size*2+1);
 
-            for(int z = 0; z < mines*2+1; z++){
-                if(i == 0){
-                    board[i][z] = String.valueOf(z);
+        b.createBoard(size);
 
-                } else if (z == 0){
-                    board[i][z] = String.valueOf(i);
-                } else {
-                    board[i][z] = "e";
-                }
+        for(int i = 0; i <= size; i++){
+
+            mines.add(new Mine(b));
+
+        }
+
+        b.printBoard();
+
+        UI(b);
+
+    }
+
+    private void flagRemover(Scanner s, Board b){
+
+        System.out.println("Enter the coord of the flag you want removed (x,y): ");
+
+        String[] flagSplitter = s.nextLine().split(",");
+
+        for(Flag f : flags){
+
+            if(f.getFlagX() == Integer.parseInt(flagSplitter[0]) && f.getFlagY() == Integer.parseInt(flagSplitter[0])){
+
+                Flag.removeFlag(f, b);
+                flags.remove(f);
 
             }
 
@@ -41,102 +56,7 @@ public class Main {
 
     }
 
-    private void printBoard(){
-
-        for (String[] strings : board) {
-
-            for (int z = 0; z < board.length; z++) {
-
-                System.out.printf("%2s ", strings[z]);
-
-            }
-
-            System.out.println();
-
-        }
-    }
-
-    private void placeMines(int mines){
-
-        for (int i = 0; i < mines; i++) {
-            Random r = new Random();
-            mineX[i] = r.nextInt(1, mines*2+1);
-            mineY[i] = r.nextInt(1, mines*2+1);
-        }
-
-        flagsLeft = mines;
-        this.mines = mines;
-
-    }
-
-    private void flagBeginning(Scanner s, String command){
-
-        int flagX;
-        int flagY;
-
-        System.out.println("Flag coords? input as x,y");
-
-        String[] coord = s.nextLine().split(",");
-
-        flagX = Integer.parseInt(coord[1]);
-        flagY = Integer.parseInt(coord[0]);
-
-        if(flagX > mines*2+1){
-            System.out.println("X Coord must be < 5");
-            flagBeginning(s, command);
-        } else if(flagY > mines*2+1){
-            System.out.println("Y Coord must be < 5");
-            flagBeginning(s, command);
-        }
-
-        if(command.equals("remove")){
-            removeFlag(flagX, flagY);
-        } else {
-            placeFlag(flagX, flagY);
-        }
-    }
-
-    private void removeFlag(int flagX, int flagY){
-
-        if(flagsLeft == 0){
-            System.out.println("No flags left, please remove a flag first");
-            return;
-        }
-
-        if(board[flagX][flagY].equalsIgnoreCase("f")){
-            board[flagX][flagY] = "e";
-        } else {
-            System.out.println("No flag in location: " + flagX + " " + flagY);
-        }
-
-        printBoard();
-
-    }
-
-    private void placeFlag(int flagX, int flagY){
-
-        for (int i = 0; i < mineX.length; i++) {
-
-            if(mineX[i] == flagX && mineY[i] == flagY){
-
-                mines--;
-
-                if(mines == 0){
-
-                    gameOver(false);
-                    return;
-                }
-
-            }
-
-        }
-
-        board[flagX][flagY] = "f";
-        printBoard();
-
-    }
-
-    private void checkSpot(Scanner s){
+    private void checkSpot(Scanner s, Board b){
 
         int checkX;
         int checkY;
@@ -149,22 +69,54 @@ public class Main {
         checkX = Integer.parseInt(coord[1]);
         checkY = Integer.parseInt(coord[0]);
 
-        for(int i = 0; i < mineX.length; i++){
-            if(checkX == mineX[i] && checkY == mineY[i]){
+        for(Mine m : mines){
+            if(checkX == m.getMineX() && checkY == m.getMineY()){
 
-                gameOver(true);
+                gameOver(true, b);
 
-            } else if(checkX + 1 == mineX[i] && checkY + 1 == mineY[i] || checkX + 1 == mineX[i] && checkY == mineY[i] || checkX - 1 == mineX[i] && checkY == mineY[i] || checkX - 1 == mineX[i] && checkY - 1 == mineY[i] || checkX == mineX[i] && checkY + 1 == mineY[i] || checkX == mineX[i] && checkY - 1 == mineY[i]){
+            } else if(checkX + 1 == m.getMineX() && checkY + 1 == m.getMineY() || checkX + 1 == m.getMineX() && checkY == m.getMineY() || checkX - 1 == m.getMineX() && checkY == m.getMineY() || checkX - 1 == m.getMineX() && checkY - 1 == m.getMineY() || checkX == m.getMineX() && checkY + 1 == m.getMineY()|| checkX == m.getMineX() && checkY - 1 == m.getMineY()){
                 counter++;
             }
         }
 
-        board[checkX][checkY] = String.valueOf(counter);
-        printBoard();
+        b.getBoard()[checkX][checkY] = String.valueOf(counter);
+        b.printBoard();
 
     }
 
-    private void UI(){
+    private static void testing(Board b){
+        for(Mine m : mines){
+
+            b.getBoard()[m.getMineX()][m.getMineY()] = "m";
+
+        }
+
+        b.printBoard();
+    }
+
+    public static void gameOver(boolean died, Board b){
+
+        if(died) {
+            for(Mine m : mines) {
+                b.getBoard()[m.getMineX()][m.getMineY()] = "m";
+            }
+            System.out.println("You died!");
+        } else {
+            for(int i = 0; i < mines.size(); i++) {
+
+                testing(b);
+
+            }
+
+            System.out.println("You win!");
+        }
+
+        playing = false;
+        b.printBoard();
+        System.exit(1);
+    }
+
+    private void UI(Board b){
 
         Scanner s = new Scanner(System.in);
 
@@ -174,18 +126,44 @@ public class Main {
 
         while(playing){
 
-            if(move.equalsIgnoreCase("flag")){
-                flagBeginning(s, "flag");
+            /*if(move.equalsIgnoreCase("flag")){
+                if(flags.size() < mines.size()){
+
+                    Flag f = new Flag();
+                    f.placeFlag(s, b);
+                    flags.add(f);
+
+                }
             } else if(move.equalsIgnoreCase("check")){
-                checkSpot(s);
+                checkSpot(s, b);
             } else if(move.equalsIgnoreCase("exit")){
                 System.exit(1);
             } else if(move.equalsIgnoreCase("remove")){
-                flagBeginning(s, "remove");
+
+                flagRemover(s, b);
+
             } else if(move.equalsIgnoreCase("testing")){
-                testing();
+                testing(b);
             }else {
                 System.out.println("Unknown move");
+            }*/
+
+            switch (move.toLowerCase(Locale.ROOT)){
+                case "flag":
+                    if(flags.size() < mines.size()){
+
+                        Flag f = new Flag();
+                        f.placeFlag(s, b);
+                        flags.add(f);
+
+                    }
+                    break;
+
+                case "check":
+                    checkSpot(s, b);
+                    break;
+
+                case
             }
 
             System.out.println("Flag, check, remove or exit?");
@@ -196,35 +174,9 @@ public class Main {
 
     }
 
-    private void testing(){
-        for(int i = 0; i < mineX.length; i++){
 
-            board[mineX[i]][mineY[i]] = "m";
-
-        }
-
-        printBoard();
-    }
-
-    private void gameOver(boolean died){
-
-        if(died) {
-            for(int i = 0; i < mineX.length; i++) {
-                board[mineX[i]][mineY[i]] = "m";
-            }
-            System.out.println("You died!");
-        } else {
-            for(int i = 0; i < mineX.length; i++) {
-                playing = false;
-                board[mineX[i]][mineY[i]] = "m";
-
-            }
-
-            System.out.println("You win!");
-        }
-
-        printBoard();
-        System.exit(1);
+    public static ArrayList<Mine> getMines(){
+        return mines;
     }
 
     public static void main(String[] args) {
@@ -235,11 +187,8 @@ public class Main {
 
         int mines = Integer.parseInt(s.nextLine());
 
-        Main m = new Main(mines);
-        m.createBoard(mines);
-        m.printBoard();
-        m.placeMines(mines);
-        m.UI();
+        Main m = new Main();
+        m.gameInit(mines);
 
     }
 }
